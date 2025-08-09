@@ -20,7 +20,7 @@ import useChkEmpSanket from '../APIs/useChkEmpSanket';
 import useSanketNoGeneratorForKarar from '../APIs/useSanketNoGeneratorForKarar';
 import { bs2ad } from '../../../../Utils/bs2ad';
 import ReuseOffice from '../../ReuseableComponents/ReuseOffice';
-import NepaliDateConverter from 'nepali-date-converter';
+import NepaliDate from 'nepali-datetime';
 
 const VisitorForm = () => {
     const BASE_URL = useBaseURL();
