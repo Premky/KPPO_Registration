@@ -20,7 +20,8 @@ const CombinedNav = ( { user } ) => {
     const role = authState.role_name;
     console.log(authState.role_name)
     const access = menuAccess[menuKey]?.[role];
-    if ( !access ) return [];
+    // if ( !access ) return [];
+    if ( !access ) return submenu;
     if ( access === 'all' ) return submenu;
     return submenu.filter( sub => access.includes( sub.path ) );
   };
