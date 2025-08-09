@@ -121,7 +121,7 @@ const VisitorForm = () => {
                                     {/* <ReuseDateField */}
                                     <ReuseDateField
                                         name="regd_date"
-                                        label="जन्म मिति(वर्ष-महिना-दिन) (वि.सं.)"
+                                        label="दर्ता मिति(वर्ष-महिना-दिन) (वि.सं.)"
                                         placeholder={'YYYY-MM-DD'}
                                         required={true}
                                         control={control}
