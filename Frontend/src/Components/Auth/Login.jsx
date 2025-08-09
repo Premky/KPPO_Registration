@@ -25,7 +25,7 @@ const Login = () => {
 
     if ( loading ) return <>Loading...</>;
     if ( state?.valid && !state.justLoggedIn && !resetPasswordOpen ) {
-        return <Navigate to='/emp' replace />;
+        return <Navigate to='/visitor/view_visitors' replace />;
     }
 
     const handleClickShowPassword = () => setShowPassword( ( prev ) => !prev );
