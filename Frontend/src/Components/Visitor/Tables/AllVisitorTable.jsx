@@ -39,14 +39,14 @@ const AllVisitorTable = () => {
   ];
 
   const { records: empRecords, loading } = useAllVisitors();
-console.log(empRecords)
+  // console.log( empRecords );
   const [rows, setRows] = useState(
     empRecords.map( ( emp ) => ( {
       ...emp,
       id: emp.id,
       address: emp.address
         ? `${ emp.address }`
-        : `${ emp.tole_ward },${ emp.city_name_np },${ emp.district_name_np },${ emp.state_name_np }`,
+        : `${ emp.tole_ward }, ${ emp.city_name_np }, ${ emp.district_name_np }`,
     } ) )
   );
   const handleProvinceChange = ( value ) => {
@@ -117,7 +117,7 @@ console.log(empRecords)
       }
 
     } catch ( error ) {
-      console.error( "Failed to update visitor:", error );      
+      console.error( "Failed to update visitor:", error );
       Swal.fire( 'समस्या आयो!', 'कृपया पुनः प्रयास गर्नुहोस्।', 'error' );
     }
   };

@@ -120,7 +120,6 @@ router.put("/update_visitor/:id", verifyToken, async (req, res) => {
     user_id,    new Date(),    new Date(),        // entered_time (if you want current time here, consider new Date())
     id,
   ];
-
   const sql = `
     UPDATE visitors_visitor 
     SET 
@@ -145,8 +144,8 @@ router.put("/update_visitor/:id", verifyToken, async (req, res) => {
   `;
 
   try {
-    console.log(data)
-    const [result] = await pool.query(sql, values);
+      const [result] = await pool.query(sql, values);
+      console.log(result)
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "Visitor record not found" });
     }
