@@ -30,7 +30,7 @@ const __dirname = path.dirname( __filename );
 // ------------------- ✅ CORS FIRST -------------------
 const hardOrigins = [
     'http://192.168.162.15',
-    'http://192.168.162.15:3210',
+    'http://192.168.162.15:8210',
     'http://localhost:3003',
     'http://localhost:3210',
     'http://202.45.146.226:5173',
