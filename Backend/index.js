@@ -31,6 +31,7 @@ const __dirname = path.dirname( __filename );
 const hardOrigins = [
     'http://202.45.146.226',
     'http://localhost:3003',
+    'http://localhost:3210',
     'http://202.45.146.226:5173',
     'https://202.45.146.226',
     'https://202.45.146.226:5173',

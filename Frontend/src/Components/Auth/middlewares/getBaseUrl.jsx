@@ -8,12 +8,13 @@ const API_OPTIONS = [
   'https://10.5.60.151',
   'https://10.5.60.151:5173',
   'http://localhost:5173',
+  'http://localhost:3210',
   'http://192.168.18.211:5173',
   'http://192.168.18.17:5173',
   'https://kptpo.onrender.com'
 ];
 
-const PORT = 3003;
+const PORT = 3210;
 const CURRENT_BASE_URL = `${window.location.protocol}//${window.location.hostname}:${PORT}`;
 const HEALTH_CHECK_PATH = "/auth/health";
 
