@@ -20,10 +20,12 @@ import useChkEmpSanket from '../APIs/useChkEmpSanket';
 import useSanketNoGeneratorForKarar from '../APIs/useSanketNoGeneratorForKarar';
 import { bs2ad } from '../../../../Utils/bs2ad';
 import ReuseOffice from '../../ReuseableComponents/ReuseOffice';
+import NepaliDateConverter from 'nepali-date-converter';
 
 const VisitorForm = () => {
     const BASE_URL = useBaseURL();
     const { state: authState } = useAuth();
+    const current_date = new NepaliDate().format( 'YYYY-MM-DD' );
     const {
         handleSubmit, watch, setValue, register, reset,
         control, formState: { errors }
@@ -88,6 +90,8 @@ const VisitorForm = () => {
     useEffect( () => {
         if ( sanketNo ) {
             setValue( 'regd_no', sanketNo );
+            setValue( 'regd_date', current_date );
+
         }
     }, [sanketNo] );
 
