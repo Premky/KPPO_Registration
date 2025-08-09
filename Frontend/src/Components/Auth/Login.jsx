@@ -97,7 +97,7 @@ const Login = () => {
                 <img src='/np_police_logo.png' alt='Nepal Police Logo' height='120px' />
             </Box>
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '1%', color: '#fc3d03' }}>
-                <h1> कारागार व्यवस्थापन विभाग:PMIS </h1>                
+                <h1> कोशी प्रदेश प्रहरी कार्यालय </h1>                
             </Box>
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '0%', marginBottom: '0%', color: '#fc3d03' }}>                
                 <h2> आगन्तुक विवरण अभिलेख </h2>
