@@ -58,7 +58,7 @@ const UpdateVisitorModal = ( { open, onClose, onSave, editingData } ) => {
         } else {
             reset( {
                 id: "",
-                regd_date: "", time: "", name: "", job: "",
+                regd_date: "", time: "", name: "", visitors_office: "",
                 state_id: "", district_id: "", gapa_napa_id: "", tole_ward: "",
                 age: "", gender: "", vehicle: "", vehcile_no: "", contact: "",
                 branch: "", job: "", remarks: ""
