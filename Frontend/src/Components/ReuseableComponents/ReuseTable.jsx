@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { DataGrid, GridToolbar } from "@mui/x-data-grid";
+import { DataGrid, useGridApiRef, GridToolbar } from "@mui/x-data-grid";
 import ExcelJS from "exceljs";
 // import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
@@ -29,6 +29,8 @@ const ReusableTable = ( {
 } ) => {
   // console.log(rows)
   // const [pageSize, setPageSize] = useState(10);
+  const apiRef = useGridApiRef();
+
   const defaultPageSize = parseInt( localStorage.getItem( "pageSize" ) ) || 25;;
   const [paginationModel, setPaginationModel] = useState( {
     pageSize: defaultPageSize,
@@ -95,13 +97,54 @@ const ReusableTable = ( {
     } ) ),
   ];
 
+  const [filterModel, setFilterModel] = useState( { items: [] } );
+
   const handleExportExcel = async () => {
     const { saveAs } = await import( "file-saver" );
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet( "Data" );
 
+    worksheet.addRow( updatedColumns.map( col => col.headerName ) );
+
+    // Get sorted IDs
+    const sortedIds = apiRef.current.getSortedRowIds();
+    let visibleRows = sortedIds.map( id => apiRef.current.getRow( id ) );
+
+    // Apply filter manually (example for simple text filter)
+    filterModel.items.forEach( filter => {
+      visibleRows = visibleRows.filter( row =>
+        String( row[filter.field] || "" )
+          .toLowerCase()
+          .includes( String( filter.value || "" ).toLowerCase() )
+      );
+    } );
+
+    visibleRows.forEach( ( row, rowIndex ) => {
+      worksheet.addRow(
+        updatedColumns.map( col =>
+          col.field === "sn" ? rowIndex + 1 : row[col.field]
+        )
+      );
+    } );
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs( new Blob( [buffer] ), "table_data.xlsx" );
+  };
+
+
+  const handleExportExcel1 = async () => {
+    const { saveAs } = await import( "file-saver" );
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet( "Data" );
+
     worksheet.addRow( updatedColumns.map( ( col ) => col.headerName ) );
-    rows.forEach( ( row, rowIndex ) => {
+
+    //Get filtered & sorted rows from DataGrid
+    const visibleRows = apiRef.current.getSortedRowIds().map( id => apiRef.current.getRow( id ) );
+
+    // rows.forEach( ( row, rowIndex ) => {
+
+    visibleRows.forEach( ( row, rowIndex ) => {
       worksheet.addRow(
         updatedColumns.map( ( col ) =>
           col.field === "sn" ? rowIndex + 1 : row[col.field]
@@ -161,6 +204,9 @@ const ReusableTable = ( {
 
       <Paper sx={{ height, width }} style={{ overflowX: "auto" }}>
         <DataGrid
+          apiRef={apiRef}
+          filterModel={filterModel}
+          onFilterModelChange={setFilterModel}
           sx={{
             border: 0,
             '& .MuiDataGrid-cell': {
@@ -227,7 +273,7 @@ const ReusableTable = ( {
           // onPaginationModelChange={( newModel ) => setPaginationModel( newModel )}
           onPaginationModelChange={handlePaginationChange}
           // pageSizeOptions={[25, 50, 100, 200, 500]}
-          pageSizeOptions={pageSizeOptions || [25, 50, 100 ]}
+          pageSizeOptions={pageSizeOptions || [25, 50, 100]}
           onPageChange={onPageChange}
 
           initialState={{

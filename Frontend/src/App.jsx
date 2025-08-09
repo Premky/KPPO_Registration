@@ -3,20 +3,6 @@ import { Routes, Route, BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './Context/AuthContext';
 import axios from 'axios';
 
-// Lazy-loaded components
-const Login = lazy( () => import( './Components/Auth/Login' ) );
-const CombinedNav = lazy( () => import( './Components/Nav/CombinedNav' ) );
-const CreateUser = lazy( () => import( './Components/AdminPanel/User/CreateUser' ) );
-const OfficeBranchPage = lazy( () => import( './Components/AdminPanel/Office/OfficeBranchPage' ) );
-const Office = lazy( () => import( './Components/AdminPanel/Office/OfficeForm' ) );
-
-const AdminCheck = lazy( () => import( './Components/Auth/middlewares/AdminCheck' ) );
-const LoggedIn = lazy( () => import( './Components/Auth/middlewares/LoggedIn' ) );
-
-
-// const BandiFinalTransferForm = lazy( () => import( './Components/BandiTransfer/Forms/BandiFinalTransferForm' ) );
-
-
 axios.interceptors.response.use(
   res => res,
   error => {
@@ -32,15 +18,27 @@ axios.interceptors.response.use(
 );
 
 import { Outlet } from 'react-router-dom';
+const OutletLayout = () => <Outlet />;
+// Lazy-loaded components
+const Login = lazy( () => import( './Components/Auth/Login' ) );
+const CombinedNav = lazy( () => import( './Components/Nav/CombinedNav' ) );
+const CreateUser = lazy( () => import( './Components/AdminPanel/User/CreateUser' ) );
+const OfficeBranchPage = lazy( () => import( './Components/AdminPanel/Office/OfficeBranchPage' ) );
+const Office = lazy( () => import( './Components/AdminPanel/Office/OfficeForm' ) );
+
+const AdminCheck = lazy( () => import( './Components/Auth/middlewares/AdminCheck' ) );
+const LoggedIn = lazy( () => import( './Components/Auth/middlewares/LoggedIn' ) );
+
+const VisitorForm = lazy(()=>import ('./Components/Visitor/Forms/VisitorForm'));
 import EmployeeForm from './Components/Employee/Forms/EmployeeForm';
 import AllEmpTable from './Components/Employee/Tables/AllEmpTable';
+import AllVisitorTable from './Components/Visitor/Tables/AllVisitorTable';
+import OfficeWiseVisitorCount from './Components/Visitor/Tables/OfficeWiseVisitorCount';
 
 
 // Layout component to wrap protected routes with navigation
 const ProtectedLayout = () => <CombinedNav />;
-
 // Layout component that just renders child routes
-const OutletLayout = () => <Outlet />;
 
 function App() {
   return (
@@ -66,9 +64,9 @@ function App() {
                 
                 {/* Payrole Routes */}
                 <Route path="visitor" element={<OutletLayout />}>                  
-                  <Route path="new_visitor" element={<EmployeeForm />} />
-                  <Route path="view_visitors" element={<AllEmpTable />} />
-                  <Route path="view_office_visitors" element={<AllEmpTable />} />
+                  <Route path="new_visitor" element={<VisitorForm />} />
+                  <Route path="view_visitors" element={<AllVisitorTable />} />
+                  <Route path="view_office_visitors" element={<OfficeWiseVisitorCount />} />
                 </Route>
                 <Route path="emp" element={<OutletLayout />}>                  
                   <Route path="create_employee" element={<EmployeeForm />} />

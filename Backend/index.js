@@ -18,6 +18,7 @@ import { authRouter } from './routes/authRoute.js';
 import {adminRouter} from './routes/adminRoute.js';
 import { publicRouter } from './routes/publicRoutes.js';
 import { employeRouter } from './routes/employeRoute.js';
+import { visitorsRoute } from './routes/visitorsRoute.js';
 
 dotenv.config();
 
@@ -131,6 +132,7 @@ app.use( '/admin', adminRouter );
 app.use( '/auth', authRouter );
 app.use( '/public', publicRouter );
 app.use( '/emp', employeRouter );
+app.use( '/visitor', visitorsRoute );
 
 
 // ------------------- ✅ Error Handler -------------------

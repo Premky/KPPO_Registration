@@ -42,8 +42,8 @@ const CombinedNav = ( { user } ) => {
       defaultPath: '/visitor',
       submenu: [                
         { name: 'नयाँ थप', path: '/visitor/new_visitor' },
-        { name: 'आगन्तुक विवरण', path: '/emp/view_employee' },        
-        { name: 'कार्यालयगत संख्या', path: '/emp/view_office_visitors' },        
+        { name: 'आगन्तुक विवरण', path: '/visitor/view_visitors' },        
+        { name: 'कार्यालयगत संख्या', path: '/visitor/view_office_visitors' },        
       ]
     },
     // {
