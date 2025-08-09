@@ -1,0 +1,314 @@
+import express from 'express';
+import con from '../utils/db.js';
+import con2 from '../utils/db2.js';
+import { promisify } from 'util';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+import NepaliDate from 'nepali-datetime';
+import dotenv from 'dotenv';
+
+import verifyToken from '../middlewares/verifyToken.js';
+// import upload from '../middlewares/upload.js';
+
+const router = express.Router();
+const query = promisify(con.query).bind(con);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+import NepaliDateConverter from 'nepali-date-converter';
+
+const current_date = new NepaliDate().format('YYYY-MM-DD');
+const fy = new NepaliDate().format('YYYY'); //Support for filter
+const fy_date = fy + '-04-01'
+// console.log(current_date);
+
+import { v2 as cloudinary } from 'cloudinary';
+// import { CloudinaryStorage } from 'multer-storage-cloudinary';
+// Cloudinary Configuration
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
+// Cloudinary Storage Configuration
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'driver_images', // Folder name in Cloudinary
+        allowed_formats: ['jpg', 'png', 'jpeg'],
+        transformation: [{ width: 500, height: 500, crop: 'limit' }]
+    }
+});
+const upload = multer({ storage });
+
+//image upload (Logic)
+const sanitizeFilename = (filename) => {
+    return filename.replace(/[^a-z0-9.]/gi, '_').toLowerCase();
+};
+
+const storage1 = multer.diskStorage({
+    destination: (req, file, callback) => {
+        const uploadDir = 'public/Uploads';
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        callback(null, uploadDir);
+    },
+    filename: (req, file, callback) => {
+        const uniqueSuffix = Date.now();
+        const sanitizedFilename = sanitizeFilename(file.originalname);
+        callback(null, `${uniqueSuffix}_${sanitizedFilename}`);
+    }
+});
+
+const upload1 = multer({ storage: storage });
+
+//end image upload
+
+function converttoad(bsdate) {
+    try {
+        const dobAD = NepaliDateConverter.parse(bsdate);
+        const ad = dobAD.getAD();
+        // console.log('DOB_AD', ad);
+        // Accessing year, month, and day using methods
+        const year = ad.year;
+        const month = ad.month + 1;
+        const date = ad.date;
+        const day = ad.day + 1;
+        const formattedDobAD = `${year}-${month.toString().padStart(2, '0')}-${date.toString().padStart(2, '0')}`;
+        // console.log('Formatted DOB_AD:', formattedDobAD);
+        return formattedDobAD;
+    }
+    catch (err) {
+        console.error(err);
+    }
+}
+// ADD Driver API with Cloudinary
+router.post("/add_driver", upload.single("image"), async (req, res) => {
+    try {
+        const {
+            drivername, driverdob, vehicle_no, vehicle_name, state, district,
+            municipality, country, driverfather, lisence_no, lisencecategory,
+            driverctz_no, ctz_iss, mentalhealth, drivereye, driverear,
+            start_route, end_route
+        } = req.body;
+
+        let imagePath = null;
+        if (req.file) {
+            imagePath = req.file.path; // Cloudinary image URL
+        }
+
+        const sql = `
+            INSERT INTO tango_driver 
+            (drivername, driverdob, vehicle_no, vehicle_name, state, district, municipality, country, 
+             driverfather, lisence_no, lisencecategory, driverctz_no, ctz_iss, 
+             mentalhealth, drivereye, driverear, start_route, end_route, driverphoto) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+
+        const values = [
+            drivername, driverdob, vehicle_no, vehicle_name, state, district, municipality,
+            country, driverfather, lisence_no, lisencecategory, driverctz_no, ctz_iss,
+            mentalhealth, drivereye, driverear, start_route, end_route, imagePath
+        ];
+
+        const result = await query(sql, values);
+
+        res.json({ Status: true, message: "Driver added successfully", driverId: result.insertId, imageUrl: imagePath });
+    } catch (error) {
+        console.error("Error adding driver:", error);
+        res.status(500).json({ Status: false, message: "Database error", error });
+    }
+});
+
+router.post("/add_driver1", upload.single("image"), async (req, res) => {
+    try {
+        const {
+            vehicledistrict, drivername, driverdob, vehicle_no, vehicle_name, state, district,
+            municipality, driverward, country, driverfather, lisence_no, lisencecategory, driverctz_no,
+            ctz_iss, mentalhealth, drivereye, driverear, drivermedicine, start_route, end_route, remarks,
+        } = req.body;
+        const dobad = converttoad(driverdob)
+        const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
+        const created_by = '0'
+        const sql = `
+            INSERT INTO tango_driver 
+            (vehicledistrict, drivername, driverdob, driverdob_ad, vehicle_no, vehicle_name, state, district, municipality, 
+            driverward, country, driverfather, lisence_no, lisencecategory, driverctz_no, ctz_iss, mentalhealth, 
+            drivereye, driverear,drivermedicine, start_route, end_route,remarks, driverphoto, created_by) 
+            VALUES (?,?, ?, ?, ?, ?, ?, ?, ?, ?,?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+
+        const values = [
+            vehicledistrict, drivername, driverdob, dobad, vehicle_no, vehicle_name, state, district, municipality,
+            driverward, country, driverfather, lisence_no, lisencecategory, driverctz_no, ctz_iss, mentalhealth,
+            drivereye, driverear, drivermedicine, start_route, end_route, remarks, imagePath, created_by
+        ];
+
+        await query(sql, values);
+
+        res.json({ Status: true, message: "Driver added successfully" });
+    } catch (error) {
+        console.error("Error adding driver:", error);
+        res.status(500).json({ Status: false, message: "Database error", error });
+    }
+});
+
+router.get("/get_drivers", async (req, res) => {
+    const sql = `SELECT 
+                td.id,
+                td.vehicle_no, td.start_route, td.end_route, td.drivername, td.driverdob, 
+                td.driverward, td.driverfather, td.lisence_no, td.driverctz_no, td.mentalhealth, 
+                td.drivereye, td.driverear, td.drivermedicine, td.driverphoto, td.remarks,
+                td.vehicledistrict AS vehicledistrict_id, td.vehicle_name AS vehiclename_id, 
+                td.country AS country_id, td.state AS state_id, td.district AS district_id, 
+                td.municipality AS municipality_id, td.lisencecategory AS category_id, 
+                td. ctz_iss AS ctziss_id,
+                nd1.name_np AS vehicledistrict, v.name_np AS vehicle_name, nc.name_np AS country, 
+                ns.name_np AS state, nd2.name_np AS district, nm.name_np AS municipality, 
+                lc.name_en AS lisencecategory, nd3.name_np AS ctz_iss, u.name AS created_by
+            FROM 
+                tango_driver td
+            LEFT JOIN np_districts nd1 ON td.vehicledistrict = nd1.id
+            LEFT JOIN vehicles v ON td.vehicle_name = v.id
+            LEFT JOIN np_country nc ON td.country = nc.id
+            LEFT JOIN np_states ns ON td.state = ns.id
+            LEFT JOIN np_districts nd2 ON td.district = nd2.id
+            LEFT JOIN np_municipalities nm ON td.municipality = nm.id
+            LEFT JOIN lisence_category lc ON td.lisencecategory = lc.id
+            LEFT JOIN np_districts nd3 ON td.ctz_iss = nd3.id
+            LEFT JOIN users u ON td.created_by = u.id;          
+                `;
+    try {
+        const result = await query(sql);
+        return res.json({ Status: true, Result: result, message:'Records fetched successfully.' })
+    } catch (err) {
+        console.error("Database Query Error:", err);
+        res.status(500).json({ Status: false, Error: "Internal Server Error" })
+    }
+});
+
+// UPDATE Driver API with Cloudinary
+router.put("/update_driver/:id", upload.single("image"), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const {
+            drivername, driverdob, vehicle_no, vehicle_name, state, district,
+            municipality, country, driverfather, lisence_no, lisencecategory,
+            driverctz_no, ctz_iss, mentalhealth, drivereye, driverear,
+            start_route, end_route
+        } = req.body;
+
+        // Fetch existing driver data
+        const existingDriver = await query(`SELECT driverphoto FROM tango_driver WHERE id = ?`, [id]);
+
+        if (!existingDriver.length) {
+            return res.status(404).json({ Status: false, message: "Driver not found" });
+        }
+
+        let imagePath = existingDriver[0].driverphoto; // Keep existing image
+
+        if (req.file) {
+            imagePath = req.file.path; // Cloudinary URL
+
+            // Delete old image from Cloudinary (Optional)
+            if (existingDriver[0].driverphoto) {
+                const oldImagePublicId = existingDriver[0].driverphoto.split('/').pop().split('.')[0];
+                await cloudinary.uploader.destroy(oldImagePublicId);
+            }
+        }
+
+        const sql = `
+            UPDATE tango_driver SET
+            drivername = ?, driverdob = ?, vehicle_no = ?, vehicle_name = ?, 
+            state = ?, district = ?, municipality = ?, country = ?, driverfather = ?, 
+            lisence_no = ?, lisencecategory = ?, driverctz_no = ?, ctz_iss = ?, 
+            mentalhealth = ?, drivereye = ?, driverear = ?, start_route = ?, end_route = ?, 
+            driverphoto = ? WHERE id = ?
+        `;
+
+        const values = [
+            drivername, driverdob, vehicle_no, vehicle_name, state, district, municipality,
+            country, driverfather, lisence_no, lisencecategory, driverctz_no, ctz_iss,
+            mentalhealth, drivereye, driverear, start_route, end_route, imagePath, id
+        ];
+
+        await query(sql, values);
+
+        res.json({ Status: true, message: "Driver updated successfully", imageUrl: imagePath });
+    } catch (error) {
+        console.error("Error updating driver:", error);
+        res.status(500).json({ Status: false, message: "Database error", error });
+    }
+});
+
+router.put("/update_driver1/:id", upload.single("image"), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const {
+            drivername, driverdob, vehicle_no, vehicle_name, state, district,
+            municipality, country, driverfather, lisence_no, lisencecategory, driverctz_no,
+            ctz_iss, mentalhealth, drivereye, driverear, drivermedicine, start_route, end_route, remarks
+        } = req.body;
+
+        const driverdob_ad = converttoad(driverdob); // Convert BS to AD
+
+        let imagePath = req.file ? `/uploads/${req.file.filename}` : null;
+
+        // Fetch existing image path
+        const existingDriver = await query(`SELECT driverphoto FROM tango_driver WHERE id = ?`, [id]);
+
+        if (!existingDriver.length) {
+            return res.status(404).json({ Status: false, message: "Driver not found" });
+        }
+
+        let oldImagePath = existingDriver[0].driverphoto;
+
+        let sql = `
+            UPDATE tango_driver SET
+            drivername = ?, driverdob = ?, driverdob_ad = ?, vehicle_no = ?, vehicle_name = ?, 
+            state = ?, district = ?, municipality = ?, country = ?, driverfather = ?, 
+            lisence_no = ?, lisencecategory = ?, driverctz_no = ?, ctz_iss = ?, 
+            mentalhealth = ?, drivereye = ?, driverear = ?, drivermedicine = ?, 
+            start_route = ?, end_route = ?, remarks = ?
+        `;
+
+        let values = [
+            drivername, driverdob, driverdob_ad, vehicle_no, vehicle_name, state, district, municipality, country,
+            driverfather, lisence_no, lisencecategory, driverctz_no, ctz_iss, mentalhealth, drivereye, driverear,
+            drivermedicine, start_route, end_route, remarks
+        ];
+
+        // If a new image is uploaded, update the image field
+        if (imagePath) {
+            sql += ", driverphoto = ?";
+            values.push(imagePath);
+
+            // Delete old image if it exists
+            if (oldImagePath) {
+                const oldImageFullPath = path.join(__dirname, "..", "public", oldImagePath);
+                if (fs.existsSync(oldImageFullPath)) {
+                    fs.unlinkSync(oldImageFullPath);
+                }
+            }
+        }
+
+        sql += " WHERE id = ?";
+        values.push(id);
+
+        await query(sql, values);
+
+        res.json({ Status: true, message: "Driver updated successfully" });
+    } catch (error) {
+        console.error("Error updating driver:", error);
+        res.status(500).json({ Status: false, message: "Database error", error });
+    }
+});
+
+
+
+export { router as driverRouter }

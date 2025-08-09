@@ -1,0 +1,10 @@
+{
+    "javascript.format.insertSpaceAfterConstructor": true,
+    "javascript.suggest.autoImports": true,
+    "javascript.suggest.classMemberSnippets.enabled": true,
+    "javascript.suggest.completeFunctionCalls": true,
+    "javascript.format.insertSpaceAfterOpeningAndBeforeClosingNonemptyBrackets": false,
+    "javascript.format.insertSpaceAfterOpeningAndBeforeClosingNonemptyParenthesis": true,
+    "javascript.format.insertSpaceAfterOpeningAndBeforeClosingTemplateStringBraces": true,
+    "javascript.format.semicolons": "insert"
+}

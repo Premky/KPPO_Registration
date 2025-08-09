@@ -1,0 +1,765 @@
+// router.put( '/update_bandi_photo1/:id', verifyToken, upload.single( 'photo' ), async ( req, res ) => {
+//     let connection 
+
+
+//     const bandi_id = req.params.id;
+//     const { bandi_name, office_bandi_id } = req.body;
+//     const photoFile = req.file;
+//     const photo_path = photoFile ? `/uploads/bandi_photos/${ photoFile.filename }` : null;
+
+//     if ( !photoFile || !bandi_name || !office_bandi_id ) {
+//         return res.status( 400 ).json( { success: false, message: 'Missing required fields' } );
+//     }
+
+//     try {
+//         connection = await pool.getConnection();
+//         await beginTransactionAsync();
+
+//         // Fetch old photo for cleanup
+//         const [result] = await pool.query( `SELECT photo_path FROM bandi_person WHERE id = ?`, [bandi_id] );
+//         const oldPhotoPath = result?.[0]?.photo_path;
+
+//         // Update photo path in DB
+//         await pool.query(
+//             `UPDATE bandi_person SET photo_path = ? WHERE id = ?`,
+//             [photo_path, bandi_id]
+//         );
+
+//         await commitAsync();
+
+//         // Delete old photo AFTER commit (non-blocking)
+//         if ( oldPhotoPath && fs.existsSync( `.${ oldPhotoPath }` ) ) {
+//             fs.unlink( `.${ oldPhotoPath }`, ( err ) => {
+//                 if ( err ) console.error( 'Failed to delete old photo:', err );
+//             } );
+//         }
+
+//         res.status( 200 ).json( { success: true, message: 'फोटो सफलतापूर्वक अपडेट भयो', photo_path } );
+
+//     } catch ( err ) {
+//         await rollbackAsync();
+
+//         // ❌ Delete the uploaded file if transaction fails
+//         if ( photoFile && fs.existsSync( photoFile.path ) ) {
+//             fs.unlink( photoFile.path, ( unlinkErr ) => {
+//                 if ( unlinkErr ) console.error( 'Rollback failed to delete uploaded file:', unlinkErr );
+//             } );
+//         }
+
+//         console.error( 'Update transaction failed:', err );
+//         res.status( 500 ).json( { success: false, message: 'फोटो अपडेट असफल भयो', error: err.message } );
+//     }
+// } );
+
+
+// router.post( '/create_bandi1', verifyToken, upload.single( 'photo' ), async ( req, res ) => {
+//     const user_id = req.user.id;
+//     const office_id = req.user.office_id;
+//     const photo_path = req.file ? `/uploads/bandi_photos/${ req.file.filename }` : null;
+//     const data = req.body;
+//     console.log( req.user.office_np );
+//     try {
+//         await beginTransactionAsync();
+
+//         console.log( '🟢 Transaction started' );
+
+//         const bandi_id = await insertBandiPerson( { ...req.body, user_id, office_id, photo_path } );
+//         console.log( '✅ insertBandiPerson', bandi_id );
+
+//         await insertKaidDetails( bandi_id, { ...req.body, user_id, office_id } );
+//         console.log( '✅ insertKaidDetails' );
+
+//         await insertCardDetails( bandi_id, { ...req.body, user_id, office_id } );
+//         console.log( '✅ insertCardDetails' );
+
+//         await insertAddress( bandi_id, { ...req.body, user_id, office_id } );
+//         console.log( '✅ insertAddress' );
+
+//         const muddaIndexes = [...new Set( Object.keys( req.body ).filter( k => k.startsWith( 'mudda_id_' ) ).map( k => k.split( '_' )[2] ) )];
+//         const muddas = muddaIndexes.map( i => ( {
+//             mudda_id: req.body[`mudda_id_${ i }`],
+//             mudda_no: req.body[`mudda_no_${ i }`],
+//             is_last: req.body[`is_last_mudda_${ i }`],
+//             is_main: req.body[`is_main_mudda_${ i }`],
+//             condition: req.body[`mudda_condition_${ i }`],
+//             district: req.body[`mudda_district_${ i }`],
+//             office: req.body[`mudda_office_${ i }`],
+//             date: req.body[`mudda_phesala_date_${ i }`],
+//             vadi: req.body[`vadi_${ i }`],
+//         } ) );
+//         await insertMuddaDetails( bandi_id, muddas, office_id );
+//         console.log( '✅ insertMuddaDetails' );
+
+
+//         let fineArray = [];
+//         try {
+//             fineArray = JSON.parse( req.body.fine );
+//         } catch ( e ) {
+//             console.error( "Invalid fine JSON:", e.message );
+//             fineArray = [];
+//         }
+//         console.log( fineArray );
+//         if ( Array.isArray( fineArray ) ) {
+//             await insertFineDetails( bandi_id, fineArray, user_id, office_id );
+//         } else {
+//             console.error( "Invalid or missing 'fine' array in request body" );
+//         }
+
+//         if ( data.punarabedan_office_id && data.punarabedan_office_district &&
+//             data.punarabedan_office_ch_no && data.punarabedan_office_date ) {
+//             await insertPunarabedan( bandi_id, req.body );
+//             console.log( '✅ insertPunarabedan' );
+//         }
+
+//         await insertFamily( bandi_id, JSON.parse( req.body.family || '[]' ), user_id, office_id );
+//         console.log( '✅ insertFamily' );
+
+//         await insertContacts( bandi_id, JSON.parse( req.body.conatact_person || '[]' ), user_id, office_id );
+//         console.log( '✅ insertContacts' );
+
+//         await insertDiseasesDetails( bandi_id, JSON.parse( req.body.disease ), user_id, office_id );
+//         console.log( '✅ insertDiseasesDetails' );
+
+//         await insertDisablilityDetails( bandi_id, JSON.parse( req.body.disability ), user_id, office_id );
+//         console.log( '✅ insertDisabilityDetails' );
+
+//         if ( data.health_insurance?.length ) {
+//             await insertHealthInsurance( bandi_id, { ...req.body, user_id, office_id } );
+//             console.log( '✅ Health Details' );
+//         }
+
+//         await commitAsync();
+//         console.log( `🟩 Transaction committed with Bandi ID ${ bandi_id } by ${ req.user.office_np }` );
+
+//         res.json( {
+//             Status: true,
+//             Result: bandi_id,
+//             message: 'बन्दी विवरण सफलतापूर्वक सुरक्षित गरियो।'
+//         } );
+
+//     } catch ( error ) {
+//         await rollbackAsync();
+//         console.error( '❌ Transaction rolled back:', error );
+
+//         if ( req.file ) {
+//             const photoFullPath = path.join( __dirname, '..', 'uploads', 'bandi_photos', req.file.filename );
+//             fs.unlink( photoFullPath, () => {
+//                 console.log( '🗑️ Photo deleted due to error' );
+//             } );
+//         }
+
+//         res.status( 500 ).json( {
+//             Status: false,
+//             Error: error.message,
+//             message: 'त्रुटि भयो। विवरण सुरक्षित हुन सकेन।'
+//         } );
+//     }
+// } );
+
+// router.put( '/update_bandi_address1/:id', verifyToken, async ( req, res ) => {
+//     const active_office = req.user.office_id;
+//     const user_id = req.user.id;
+
+//     const id = req.params.id;
+//     console.log( id );
+//     const { bandi_id, nationality_id, province_id, district_id, gapa_napa_id, wardno, bidesh_nagarik_address_details } = req.body;
+//     try {
+//         let sql = '';
+//         let values = '';
+//         if ( nationality_id == 1 ) {
+//             values = [nationality_id, province_id, district_id, gapa_napa_id, wardno, id];
+//             sql = `
+//                 UPDATE bandi_address
+//                 SET nationality_id = ?, province_id = ?, district_id = ?, gapa_napa_id = ? , wardno=? WHERE id = ?`;
+//         } else {
+//             values = [nationality_id, bidesh_nagarik_address_details, id];
+//             sql = `UPDATE bandi_address SET nationality_id=?, bidesh_nagarik_address_details=? WHERE id =?`;
+//         }
+//         const [result] = await pool.query( sql, values );
+//         return res.json( {
+//             Status: true,
+//             message: "बन्दी विवरण सफलतापूर्वक सुरक्षित गरियो।"
+//         } );
+//     } catch ( error ) {
+//         console.error( "Transaction failed:", error );
+//         return res.status( 500 ).json( {
+//             Status: false,
+//             Error: error.message,
+//             message: "सर्भर त्रुटि भयो, सबै डाटा पूर्वस्थितिमा फर्काइयो।"
+//         } );
+//     }
+// } );
+
+
+// router.put( '/update_bandi_kaid_details1/:id', verifyToken, async ( req, res ) => {
+//     const active_office = req.user.office_id;
+//     const user_id = req.user.id;
+
+//     const id = req.params.id;
+//     console.log( id );
+//     const { bandi_id, bandi_type, hirasat_years, hirasat_months, hirasat_days, thuna_date_bs, release_date_bs } = req.body;
+
+//     // console.log(req.body)
+//     let thunaDateAd = '1900-01-01';
+//     let releaseDateAd = '1900-01-01';
+//     if ( thuna_date_bs ) {
+//         thunaDateAd = await bs2ad( thuna_date_bs );
+//     }
+//     if ( release_date_bs ) {
+//         releaseDateAd = await bs2ad( release_date_bs );
+//     }
+
+//     try {
+//         await beginTransactionAsync();
+//         let sql1 = '';
+//         let values1 = '';
+//         let sql2 = '';
+//         let values2 = '';
+//         if ( bandi_type == 'कैदी' ) {
+//             values1 = [hirasat_years, hirasat_months, hirasat_days, thuna_date_bs, thunaDateAd, release_date_bs, releaseDateAd, id];
+//             sql1 = `
+//                 UPDATE bandi_kaid_details
+//                 SET hirasat_years = ?, hirasat_months = ?, hirasat_days = ?, thuna_date_bs = ? , thuna_date_ad=?,
+//                     release_date_bs=?, release_date_ad=?  WHERE id = ?`;
+//         } else if ( bandi_type == 'थुनुवा' ) {
+//             values1 = [hirasat_years, hirasat_months, hirasat_days, thuna_date_bs, thunaDateAd, id];
+//             sql1 = `UPDATE bandi_kaid_details SET hirasat_years=?, hirasat_months=?, hirasat_days=?,
+//                     thuna_date_bs=?, thuna_date_ad=? WHERE id =?`;
+//         }
+
+//         await pool.query( sql1, values1 );
+
+//         sql2 = `UPDATE bandi_person SET bandi_type=? WHERE id=?`;
+//         values2 = [bandi_type, bandi_id];
+//         await pool.query( sql2, values2 );
+
+//         await commitAsync(); // Commit the transaction
+//         return res.json( {
+//             Status: true,
+//             message: "बन्दी विवरण सफलतापूर्वक सुरक्षित गरियो।"
+//         } );
+
+//     } catch ( error ) {
+//         await rollbackAsync(); // Rollback the transaction if error occurs
+
+//         console.error( "Transaction failed:", error );
+//         return res.status( 500 ).json( {
+//             Status: false,
+//             Error: error.message,
+//             message: "सर्भर त्रुटि भयो, सबै डाटा पूर्वस्थितिमा फर्काइयो।"
+//         } );
+//     }
+// } );
+
+// router.post( '/create_bandi_family1', verifyToken, async ( req, res ) => {
+//     const active_office = req.user.office_id;
+//     const user_id = req.user.id;
+
+//     const { bandi_id, relation_np, relative_name, relative_address, contact_no } = req.body;
+//     // console.log(req.body)
+//     try {
+//         await beginTransactionAsync();
+//         let sql = '';
+//         let values = '';
+
+//         values = [bandi_id, relative_name, relation_np, relative_address, contact_no, user_id, user_id, active_office];
+//         sql = `INSERT INTO bandi_relative_info(
+//             bandi_id, relative_name, relation_id, relative_address, contact_no, created_by, updated_by, current_office_id) VALUES(?)`;
+//         const [result] = await pool.query( sql, [values] );
+//         await commitAsync(); // Commit the transaction
+//         return res.json( {
+//             Result: bandi_id,
+//             Status: true,
+//             message: "बन्दी विवरण सफलतापूर्वक सुरक्षित गरियो।"
+//         } );
+
+//     } catch ( error ) {
+//         await rollbackAsync(); // Rollback the transaction if error occurs
+
+//         console.error( "Transaction failed:", error );
+//         return res.status( 500 ).json( {
+//             Status: false,
+//             Error: error.message,
+//             message: "सर्भर त्रुटि भयो, सबै डाटा पूर्वस्थितिमा फर्काइयो।"
+//         } );
+//     }
+// } );
+
+
+router.get( "/released_bandi_count2", verifyToken, async ( req, res ) => {
+    const active_office = req.user.office_id;
+    const targetOffice = req.query.office_id || active_office;
+    const officeParams = [targetOffice];
+
+    const todayBS = new NepaliDate().format( "YYYY-MM-DD" );
+    const fy = new NepaliDate().format( "YYYY" );
+    const fyStart = `${ fy - 1 }-04-01`;
+
+    const from_date_bs = req.query.from_date || fyStart;
+    const to_date_bs = req.query.to_date || todayBS;
+    const currentMonth = todayBS.slice( 0, 7 );
+    const monthStart = `${ currentMonth }-01`;
+
+    const formatGenderCounts = ( rows, base = { Male: 0, Female: 0, Other: 0 } ) => {
+        const counts = { ...base };
+        rows.forEach( ( { gender, count } ) => {
+            if ( gender && counts.hasOwnProperty( gender ) ) {
+                counts[gender] += Number( count );
+            }
+        } );
+        counts.Total = counts.Male + counts.Female + counts.Other;
+        return counts;
+    };
+
+    try {
+        // 📤 Original release reasons
+        const releaseSql = `
+      WITH reasons AS (
+  SELECT id AS reason_id, reasons_np FROM bandi_release_reasons
+),
+genders AS (
+  SELECT 'Male' AS gender
+  UNION ALL SELECT 'Female'
+  UNION ALL SELECT 'Other'
+),
+periods AS (
+  SELECT 'this_month' AS period
+  UNION ALL SELECT 'till_last_month'
+),
+reason_gender_periods AS (
+  SELECT r.reason_id, r.reasons_np, g.gender, p.period
+  FROM reasons r
+  CROSS JOIN genders g
+  CROSS JOIN periods p
+),
+actual_counts AS (
+  SELECT 
+    brd.reason_id,
+    bp.gender,
+    CASE 
+      WHEN LEFT(brd.karnayan_miti, 7) = ? THEN 'this_month'
+      ELSE 'till_last_month'
+    END AS period,
+    COUNT(*) AS count
+  FROM bandi_release_details brd
+  JOIN bandi_person bp ON brd.bandi_id = bp.id
+  WHERE brd.karnayan_miti IS NOT NULL
+    AND bp.is_active = 0
+    AND bp.current_office_id = ?
+    AND brd.karnayan_miti BETWEEN ? AND ?
+  GROUP BY brd.reason_id, bp.gender, period
+)
+SELECT 
+  rgp.reason_id,
+  rgp.reasons_np,
+  rgp.gender,
+  rgp.period,
+  COALESCE(ac.count, 0) AS count
+FROM reason_gender_periods rgp
+LEFT JOIN actual_counts ac ON
+  rgp.reason_id = ac.reason_id AND
+  rgp.gender = ac.gender AND
+  rgp.period = ac.period
+ORDER BY rgp.reason_id, rgp.gender, rgp.period;
+    `;
+
+        const releaseResults = await query( releaseSql, [
+            currentMonth,
+            ...officeParams,
+            from_date_bs,
+            to_date_bs
+        ] );
+
+        const formatted = {};
+
+        releaseResults.forEach( ( { reason_id, reasons_np, gender, count, period } ) => {
+            if ( !formatted[reason_id] ) {
+                formatted[reason_id] = {
+                    reason_id,
+                    reason: reasons_np,
+                    till_last_month: { Male: 0, Female: 0, Other: 0, Total: 0 },
+                    this_month: { Male: 0, Female: 0, Other: 0, Total: 0 }
+                };
+            }
+            formatted[reason_id][period][gender] = count;
+            formatted[reason_id][period].Total =
+                ( formatted[reason_id][period].Male || 0 ) +
+                ( formatted[reason_id][period].Female || 0 ) +
+                ( formatted[reason_id][period].Other || 0 );
+        } );
+
+        // 🔄 New aggregates
+        const [
+            activeBeforeThisMonth,
+            releasedThisMonth,
+            addedThisMonth,
+            dependentActive
+        ] = await Promise.all( [
+            query( `
+        SELECT bp.gender, COUNT(*) AS count
+        FROM bandi_person bp
+        LEFT JOIN bandi_kaid_details bkd ON bp.id = bkd.bandi_id
+        WHERE bp.is_active = 1 AND bp.current_office_id = ?
+          AND LEFT(bkd.thuna_date_bs, 7) < ?
+        GROUP BY bp.gender;
+      `, [targetOffice, currentMonth] ),
+
+            query( `
+        SELECT bp.gender, COUNT(*) AS count
+        FROM bandi_release_details brd
+        JOIN bandi_person bp ON bp.id = brd.bandi_id
+        WHERE bp.current_office_id = ?
+          AND LEFT(brd.karnayan_miti, 7) = ?
+        GROUP BY bp.gender;
+      `, [targetOffice, currentMonth] ),
+
+            query( `
+        SELECT bp.gender, COUNT(*) AS count
+        FROM bandi_person bp
+        JOIN bandi_kaid_details bkd ON bp.id = bkd.bandi_id
+        WHERE bp.current_office_id = ?
+          AND bkd.thuna_date_bs BETWEEN ? AND ?
+        GROUP BY bp.gender;
+      `, [targetOffice, monthStart, to_date_bs] ),
+
+            query( `
+        SELECT bp.gender, COUNT(*) AS count
+        FROM bandi_person bp
+        JOIN bandi_relative_info bri ON bp.id = bri.bandi_id
+        WHERE bp.current_office_id = ?
+          AND bp.is_active = 1
+          AND bri.is_dependent = 1
+        GROUP BY bp.gender;
+      `, [targetOffice] )
+        ] );
+
+        // 🧩 Add to unified output
+        formatted['active_count_till_last_month'] = {
+            till_last_month: formatGenderCounts( [...activeBeforeThisMonth, ...releasedThisMonth] ),
+            this_month: formatGenderCounts( [] )
+        };
+
+        formatted['added_this_month'] = {
+            till_last_month: formatGenderCounts( [] ),
+            this_month: formatGenderCounts( addedThisMonth )
+        };
+
+        formatted['dependent_active'] = {
+            till_last_month: formatGenderCounts( dependentActive ),
+            this_month: formatGenderCounts( [] )
+        };
+
+        res.json( {
+            Status: true,
+            from_date: from_date_bs,
+            to_date: to_date_bs,
+            Result: formatted
+        } );
+    } catch ( err ) {
+        console.error( "DB Error:", err );
+        res.status( 500 ).json( { Status: false, Error: "Query failed" } );
+    }
+} );
+
+
+router.get( "/released_bandi_count1", verifyToken, async ( req, res ) => {
+    const active_office = req.user.office_id;
+    const targetOffice = req.query.office_id || active_office;
+    const isSuperOffice = active_office === 1 || active_office === 2;
+
+    const officeCondition = "bp.current_office_id = ?";
+    const officeParams = [targetOffice];
+
+
+    // Determine default range
+    const todayBS = new NepaliDate().format( 'YYYY-MM-DD' );
+    const fy = new NepaliDate().format( 'YYYY' ); // e.g., '2081'
+    const fyStart = `${ fy - 1 }-04-01`;
+
+    // Accept query override
+    const from_date_bs = req.query.from_date || fyStart;
+    const to_date_bs = req.query.to_date || todayBS;
+
+    // console.log('fyStart:', fyStart)
+    // console.log('now:', to_date_bs)
+    // Used for separating this month vs earlier
+    const currentMonth = todayBS.slice( 0, 7 );
+
+    try {
+        const sql = `
+      SELECT 
+        brr.id AS reason_id,
+        brr.reasons_np,
+        bp.gender,
+        COUNT(*) AS count,
+        CASE 
+          WHEN LEFT(brd.karnayan_miti, 7) = ? THEN 'this_month'
+          ELSE 'till_last_month'
+        END AS period
+      FROM bandi_release_details brd
+      JOIN bandi_release_reasons brr ON brd.reason_id = brr.id
+      JOIN bandi_person bp ON brd.bandi_id = bp.id
+      WHERE brd.karnayan_miti IS NOT NULL AND bp.is_active=0
+        AND ${ officeCondition }
+        AND brd.karnayan_miti BETWEEN ? AND ?
+      GROUP BY brr.id, bp.gender, period
+      ORDER BY brr.id, bp.gender;
+    `;
+
+        const results = await query( sql, [
+            currentMonth,      // for CASE
+            ...officeParams,
+            from_date_bs,
+            to_date_bs
+        ] );
+        // console.log('officeCondition',con.format(sql, currentMonth,...officeParams,from_date_bs, to_date_bs))
+        // console.log(results)
+        const formatted = {};
+        results.forEach( ( { reason_id, reasons_np, gender, count, period } ) => {
+            if ( !formatted[reason_id] ) {
+                formatted[reason_id] = {
+                    reason_id: reason_id,
+                    reason: reasons_np,
+                    till_last_month: { Male: 0, Female: 0, Other: 0 },
+                    this_month: { Male: 0, Female: 0, Other: 0 }
+                };
+            }
+            formatted[reason_id][period][gender] = count;
+        } );
+
+        res.json( {
+            Status: true,
+            from_date: from_date_bs,
+            to_date: to_date_bs,
+            Result: formatted
+        } );
+
+    } catch ( error ) {
+        console.error( "DB Error:", error );
+        res.status( 500 ).json( { Status: false, Error: "Query failed" } );
+    }
+} );
+
+router.get( '/get_office_wise_count1', verifyToken, async ( req, res ) => {
+    const active_office = req.user.office_id;
+    let defaultAge = 65;
+    const {
+        startDate,
+        endDate,
+        nationality,
+        ageFrom,
+        ageTo,
+        office_id // optional for super admin
+    } = req.query;
+
+    // console.log(req.query)
+
+    const baseSql = `
+            SELECT
+            voad.state_name_np,
+            voad.district_order_id,
+            -- o.office_name_with_letter_address,
+            o.letter_address AS office_short_name,
+
+            COUNT(IF(bp.bandi_type = 'कैदी' AND gender = 'male', 1, NULL)) AS kaidi_male,
+            COUNT(IF(bp.bandi_type = 'कैदी' AND gender = 'female', 1, NULL)) AS kaidi_female,
+            COUNT(IF(bp.bandi_type = 'कैदी' AND gender NOT IN ('male', 'female'), 1, NULL)) AS kaidi_other,
+            COUNT(IF(bp.bandi_type = 'कैदी', 1, NULL)) AS total_kaidi,
+
+            COUNT(IF(bp.bandi_type = 'थुनुवा' AND gender = 'male', 1, NULL)) AS thunuwa_male,
+            COUNT(IF(bp.bandi_type = 'थुनुवा' AND gender = 'female', 1, NULL)) AS thunuwa_female,
+            COUNT(IF(bp.bandi_type = 'थुनुवा' AND gender NOT IN ('male', 'female'), 1, NULL)) AS thunuwa_other,
+            COUNT(IF(bp.bandi_type = 'थुनुवा', 1, NULL)) AS total_thunuwa,
+
+            COUNT(IF(gender = 'male', 1, NULL)) AS total_male,
+            COUNT(IF(gender = 'female', 1, NULL)) AS total_female,
+
+            COUNT(*) AS total_kaidibandi,
+
+            COUNT(IF(bp.bandi_type = 'कैदी' AND gender = 'male' AND age >= ${ defaultAge }, 1, NULL)) AS kaidi_male_65plus,
+            COUNT(IF(bp.bandi_type = 'कैदी' AND gender = 'female' AND age >= ${ defaultAge }, 1, NULL)) AS kaidi_female_65plus,
+            COUNT(IF(bp.bandi_type = 'थुनुवा' AND gender = 'male' AND age >= ${ defaultAge }, 1, NULL)) AS thunuwa_male_65plus,
+            COUNT(IF(bp.bandi_type = 'थुनुवा' AND gender = 'female' AND age >= ${ defaultAge }, 1, NULL)) AS thunuwa_female_65plus,
+
+           -- COUNT(IF(bri.is_dependent = 1, 1, NULL)) AS aashrit,
+
+            COUNT(IF(vbad.country_name_np != 'नेपाल', 1, NULL)) AS foreign_count,
+            GROUP_CONCAT(DISTINCT IF(vbad.country_name_np != 'नेपाल', vbad.country_name_np, NULL)) AS foreign_countries
+
+            FROM bandi_person bp
+            	LEFT JOIN view_bandi_address_details vbad ON bp.id=vbad.bandi_id
+                LEFT JOIN offices o ON bp.current_office_id=o.id
+                LEFT JOIN view_office_address_details voad ON o.id = voad.office_id
+                LEFT JOIN (
+                SELECT
+                    bandi_id,
+                    SUM(CASE WHEN bri.relation_id = '6' THEN 1 ELSE 0 END) AS aashrit_male,
+                    SUM(CASE WHEN bri.relation_id = '7' THEN 1 ELSE 0 END) AS aashrit_female,
+                    SUM(CASE WHEN bri.relation_id NOT IN ('6', '7') THEN 1 ELSE 0 END) AS aashrit_other,
+                    COUNT(IF(bri.is_dependent = 1, 1, NULL)) AS aashrit
+                FROM bandi_relative_info bri
+                WHERE is_dependent = 1
+                GROUP BY bandi_id
+                ) AS aashrit ON aashrit.bandi_id = bp.id            
+    `;
+
+    const filters = [];
+    // const params = [startDate, endDate, startDate, endDate];
+    const params = [];
+
+    // Shared conditions
+    filters.push( "bp.is_active = 1" );
+
+    // Age filter
+    if ( ageFrom && ageTo ) {
+        filters.push( "TIMESTAMPDIFF(YEAR, bp.dob_ad, CURDATE()) BETWEEN ? AND ?" );
+        params.push( Number( ageFrom ), Number( ageTo ) );
+    }
+
+    // Nationality filter
+    if ( nationality ) {
+        // console.log(nationality)
+        filters.push( "bp.nationality = ?" );
+        params.push( nationality.trim() );
+    }
+
+    // Office filter
+    console.log( active_office );
+    if ( active_office == 1 || active_office == 2 ) {
+        if ( office_id ) {
+            filters.push( "bp.current_office_id=?" );
+            params.push( office_id );
+        } else {
+            filters.push( 1 == 1 );
+        }
+    } else {
+        filters.push( "bp.current_office_id=?" );
+        params.push( active_office );
+    }
+
+    const whereClause = filters.length > 0 ? `WHERE ${ filters.join( " AND " ) }` : '';
+
+    const finalSql = `
+        ${ baseSql }
+        ${ whereClause }
+        GROUP BY voad.state_id, voad.district_order_id, o.letter_address
+            ORDER BY  voad.state_id, voad.district_order_id, o.letter_address;
+    `;
+
+    // console.log( finalSql );
+    try {
+        const result = await query( finalSql, params );
+        // console.log( result );
+        res.json( { Status: true, Result: result } );
+    } catch ( err ) {
+        console.error( "Database Query Error:", err );
+        res.status( 500 ).json( { Status: false, Error: "Internal Server Error" } );
+    }
+} );
+
+router.get( '/get_prisioners_count1', verifyToken, async ( req, res ) => {
+    const active_office = req.user.office_id;
+    const {
+        startDate,
+        endDate,
+        nationality,
+        ageFrom,
+        ageTo,
+        office_id // optional for super admin
+    } = req.query;
+
+    console.log( req.query );
+
+    const baseSql = `
+        SELECT 
+            -- o.office_name_with_letter_address AS office_name,
+           -- o.id AS office_id,
+            m.mudda_name,
+            COUNT(bp.id) AS Total,
+
+            -- कैदी
+            SUM(CASE WHEN bp.is_active = 1 AND bp.bandi_type = 'कैदी' THEN 1 ELSE 0 END) AS KaidiTotal,
+            SUM(CASE WHEN bp.is_active = 1 AND bp.bandi_type = 'कैदी' AND bp.gender = 'Male' THEN 1 ELSE 0 END) AS KaidiMale,
+            SUM(CASE WHEN bp.is_active = 1 AND bp.bandi_type = 'कैदी' AND bp.gender = 'Female' THEN 1 ELSE 0 END) AS KaidiFemale,
+
+            -- थुनुवा
+            SUM(CASE WHEN bp.is_active = 1 AND bp.bandi_type = 'थुनुवा' THEN 1 ELSE 0 END) AS ThunuwaTotal,
+            SUM(CASE WHEN bp.is_active = 1 AND bp.bandi_type = 'थुनुवा' AND bp.gender = 'Male' THEN 1 ELSE 0 END) AS ThunuwaMale,
+            SUM(CASE WHEN bp.is_active = 1 AND bp.bandi_type = 'थुनुवा' AND bp.gender = 'Female' THEN 1 ELSE 0 END) AS ThunuwaFemale,
+
+            -- 65+ उम्र
+            SUM(CASE WHEN bp.is_active = 1 AND bp.bandi_type = 'थुनुवा' AND TIMESTAMPDIFF(YEAR, bp.dob_ad, CURDATE()) >= 65 THEN 1 ELSE 0 END) AS ThunuwaAgeAbove65,
+            SUM(CASE WHEN bp.is_active = 1 AND bp.bandi_type = 'कैदी' AND TIMESTAMPDIFF(YEAR, bp.dob_ad, CURDATE()) >= 65 THEN 1 ELSE 0 END) AS KaidiAgeAbove65,
+
+            -- गिरफ्तारी / छुटे
+            SUM(CASE WHEN bkd.thuna_date_bs BETWEEN ? AND ? THEN 1 ELSE 0 END) AS TotalArrestedInDateRange,
+            SUM(CASE WHEN bkd.release_date_bs BETWEEN ? AND ? THEN 1 ELSE 0 END) AS TotalReleasedInDateRange
+
+        FROM bandi_person bp
+        LEFT JOIN bandi_mudda_details bmd ON bp.id = bmd.bandi_id
+        LEFT JOIN offices o ON bp.current_office_id = o.id
+        LEFT JOIN muddas m ON bmd.mudda_id = m.id
+        LEFT JOIN bandi_kaid_details bkd ON bkd.bandi_id = bp.id
+    `;
+
+    const filters = [];
+    const params = [startDate, endDate, startDate, endDate];
+
+    // Shared conditions
+    filters.push( "bp.is_active = 1" );
+    filters.push( "bmd.is_main_mudda = 1" );
+    filters.push( "bmd.is_last_mudda = 1" );
+
+    // Age filter
+    if ( ageFrom && ageTo ) {
+        filters.push( "TIMESTAMPDIFF(YEAR, bp.dob_ad, CURDATE()) BETWEEN ? AND ?" );
+        params.push( Number( ageFrom ), Number( ageTo ) );
+    }
+
+    // Nationality filter
+    if ( nationality ) {
+        // console.log(nationality)
+        filters.push( "bp.nationality = ?" );
+        params.push( nationality.trim() );
+    }
+
+    // Office filter
+
+
+
+    if ( active_office == 1 || active_office == 2 ) {
+        if ( office_id ) {
+            filters.push( "bp.current_office_id=?" );
+            params.push( office_id );
+        } else {
+            filters.push( 1 == 1 );
+        }
+    } else {
+        filters.push( "bp.current_office_id=?" );
+        params.push( active_office );
+    }
+
+    const whereClause = filters.length > 0 ? `WHERE ${ filters.join( " AND " ) }` : '';
+
+    const finalSql = `
+        ${ baseSql }
+        ${ whereClause }
+        GROUP BY m.mudda_name
+        HAVING 
+            KaidiTotal > 0 OR 
+            ThunuwaTotal > 0 OR 
+            TotalArrestedInDateRange > 0 OR 
+            TotalReleasedInDateRange > 0
+        ORDER BY m.mudda_name ASC
+    `;
+
+    // console.log(finalSql)
+    try {
+        const result = await query( finalSql, params );
+        // console.log( result );
+        res.json( { Status: true, Result: result } );
+    } catch ( err ) {
+        console.error( "Database Query Error:", err );
+        res.status( 500 ).json( { Status: false, Error: "Internal Server Error" } );
+    }
+} );
