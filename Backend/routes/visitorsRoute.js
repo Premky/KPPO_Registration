@@ -149,10 +149,10 @@ router.put("/update_visitor/:id", verifyToken, async (req, res) => {
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "Visitor record not found" });
     }
-    res.json({ message: "Visitor updated successfully" });
+    res.json({Status:true, message: "Visitor updated successfully" });
   } catch (error) {
     console.error("Update visitor error:", error);
-    res.status(500).json({ message: "Failed to update visitor", error: error.message });
+    res.status(500).json({Status:false,  message: "Failed to update visitor", error: error.message });
   }
 });
 
