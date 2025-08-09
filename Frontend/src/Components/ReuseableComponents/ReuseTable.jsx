@@ -11,7 +11,7 @@ import Swal from "sweetalert2";
 const ReusableTable = ( {
   columns,
   rows,
-  height = 500,
+  height = 700,
   width = "100%",
   showView = false,
   showEdit = false,
