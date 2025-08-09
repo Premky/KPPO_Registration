@@ -34,7 +34,7 @@ router.post( '/create_visitor', verifyToken, async ( req, res ) => {
         console.log( 'data', data );
         // const address = `${data?.city_id}-${data?.district_id}, ${data?.province_id}`
         const values = [active_office_name, active_office, data.regd_no, data.regd_date, data.time, data.name, data.visitors_office,
-            data.province_id, data.district_id, data.city_id, data.tole_ward, data.age, data.gender, data.mobile_no, data.vehicle, data.vehicle_no, data.branch, data.job, data.remarks, user_id,
+            data.province_id, data.district_id, data.city_id, data.tole_ward, data.age, data.gender, data.contact, data.vehicle, data.vehicle_no, data.branch, data.job, data.remarks, user_id,
             new Date(), data.time
         ];
 

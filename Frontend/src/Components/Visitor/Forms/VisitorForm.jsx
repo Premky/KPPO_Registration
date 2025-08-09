@@ -142,7 +142,7 @@ const VisitorForm = () => {
                                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                                     <ReuseInput
                                         name="name"
-                                        label="नाम(नेपालीमा)"
+                                        label="नामथर(नेपालीमा)"
                                         required={true}
                                         control={control}
                                         error={errors.name_in_nepali}
@@ -245,7 +245,7 @@ const VisitorForm = () => {
                                         maxLength={10}
                                         control={control}
                                         required={true}
-                                        error={errors.mobile_no}
+                                        error={errors.contact}
                                     />
                                 </Grid>
                                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
