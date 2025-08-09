@@ -39,7 +39,7 @@ const CombinedNav = ( { user } ) => {
     
     {
       name: 'आगन्तुक',
-      defaultPath: '/visitor',
+      defaultPath: '/visitor/view_office_visitors',
       submenu: [                
         { name: 'नयाँ थप', path: '/visitor/new_visitor' },
         { name: 'आगन्तुक विवरण', path: '/visitor/view_visitors' },        
