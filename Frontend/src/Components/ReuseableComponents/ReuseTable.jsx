@@ -70,7 +70,7 @@ const ReusableTable = ( {
     ...cleanedColumns.map( ( col ) => ( {
       ...col,
       flex: 1,
-      minWidth: col.minWidth || 150,
+      // minWidth: col.minWidth || 150,
       sortable: true,
       hideable: true,
       hide: col.hide || false,

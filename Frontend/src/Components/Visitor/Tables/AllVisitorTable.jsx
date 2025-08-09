@@ -13,6 +13,7 @@ import ReuseDistrict from '../../ReuseableComponents/ReuseDistrict';
 import ReuseMunicipality from '../../ReuseableComponents/ReuseMunicipality';
 import ReuseInput from '../../ReuseableComponents/ReuseInput';
 import UpdateVisitorDialog from '../Dialogs/UpdateVisitorDialog';
+import Swal from 'sweetalert2';
 
 const AllVisitorTable = () => {
   const BASE_URL = useBaseURL();
@@ -24,7 +25,7 @@ const AllVisitorTable = () => {
     { field: "office", headerName: "कार्यालय" },
     { field: "regd_no", headerName: "दर्ता नं." },
     { field: "regd_date", headerName: "दर्ता मिति" },
-    { field: "time", headerName: "समय" },    
+    { field: "time", headerName: "समय" },
     { field: "visitors_office", headerName: "पेशा" },
     { field: "name", headerName: "नामथर" },
     { field: "address", headerName: "वतन" },
@@ -38,14 +39,14 @@ const AllVisitorTable = () => {
   ];
 
   const { records: empRecords, loading } = useAllVisitors();
-
+console.log(empRecords)
   const [rows, setRows] = useState(
     empRecords.map( ( emp ) => ( {
       ...emp,
       id: emp.id,
       address: emp.address
         ? `${ emp.address }`
-        : `${ emp.tole_ward },${ emp.city_name_np },${ emp.district_name_np },${ emp.district_state_np }`,
+        : `${ emp.tole_ward },${ emp.city_name_np },${ emp.district_name_np },${ emp.state_name_np }`,
     } ) )
   );
   const handleProvinceChange = ( value ) => {
@@ -93,25 +94,31 @@ const AllVisitorTable = () => {
   };
 
   // Save edited data
-  const handleSaveEdit = async (updatedData) => {
+  const handleSaveEdit = async ( updatedData ) => {
     try {
       // console.log(data)
       // Assuming your API endpoint for update is like this:
-      await axios.put(
+      const response = await axios.put(
         `${ BASE_URL }/visitor/update_visitor/${ updatedData.id }`,
         updatedData,
         { withCredentials: true }
       );
-
+      const { Status, Result, Error } = response.data;
       setRows( ( prevRows ) =>
         prevRows.map( ( r ) => ( r.id === updatedData.id ? updatedData : r ) )
       );
+      if ( Status ) {
+        Swal.fire( 'परिमार्जित!', 'रिकर्ड सफलतापूर्वक परिमार्जित गरीयो!', 'success' );
+        reset();
+        setOpenEditDialog( false );
+        setEditingRow( null );
+      } else {
+        Swal.fire( 'त्रुटि!', Error || 'रिकर्ड थप्न सकिएन', 'error' );
+      }
 
-      setOpenEditDialog( false );
-      setEditingRow( null );
     } catch ( error ) {
-      console.error( "Failed to update visitor:", error );
-      alert( "समस्या आयो, कृपया पुनः प्रयास गर्नुहोस्।" );
+      console.error( "Failed to update visitor:", error );      
+      Swal.fire( 'समस्या आयो!', 'कृपया पुनः प्रयास गर्नुहोस्।', 'error' );
     }
   };
 

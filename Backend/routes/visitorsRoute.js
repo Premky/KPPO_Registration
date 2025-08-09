@@ -105,9 +105,9 @@ router.put("/update_visitor/:id", verifyToken, async (req, res) => {
     data.time,
     data.name,
     data.visitors_office,
-    data.state_id,     // Changed province_id to state_id to match SQL
-    data.district_id,
-    data.city_id,
+    data.state_id || null,     // Changed province_id to state_id to match SQL
+    data.district_id || null,
+    data.city_id || null,
     data.tole_ward,
     data.age,
     data.gender,
