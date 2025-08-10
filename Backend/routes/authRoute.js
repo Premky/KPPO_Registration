@@ -310,7 +310,7 @@ router.post( '/login', async ( req, res ) => {
     const fetchUserQuery = `
     SELECT DISTINCT u.*, vo.name AS office_np
     FROM visitors_customuser u
-    LEFT JOIN visitors_office vo ON u.office_code=vo.code
+    LEFT JOIN visitors_office vo ON u.office_code=vo.id
     WHERE u.username = ?`;
     try {
         // Use promise-based query
