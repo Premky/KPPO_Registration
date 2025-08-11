@@ -297,18 +297,23 @@ router.get( "/get_next_sanket_no", verifyToken, async ( req, res ) => {
         const [[countRow]] = await pool.query(
             `SELECT 
                 COUNT(*) AS count,
-                MAX(regd_no) AS last_regd_no
+                (SELECT regd_no
+                FROM visitors_visitor e2
+                JOIN visitors_office o2 ON o2.name = e2.office
+                WHERE o2.id = 1
+                ORDER BY e2.id DESC
+                LIMIT 1) AS last_regd_no
             FROM visitors_visitor e
             JOIN visitors_office o ON o.name = e.office
              WHERE o.name = ?`,
-            [active_office_name]
+            [active_office_name]            
         );
         const last_regd_no = countRow.last_regd_no;
         const currentSn = parseInt(last_regd_no.split("-")[1], 10);
         const nextCount = currentSn + 1;
 
         const sanket_no = office_code + '-' + nextCount;
-        console.log( sanket_no );
+        console.log( last_regd_no );
         res.json( { Status: true, sanket_no } );
     } catch ( error ) {
         console.error( "❌ Sanket no generation failed:", error );
