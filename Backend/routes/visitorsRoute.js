@@ -306,13 +306,16 @@ router.get( "/get_next_sanket_no", verifyToken, async ( req, res ) => {
             FROM visitors_visitor e
             JOIN visitors_office o ON o.name = e.office
              WHERE o.name = ?`,
-            [active_office_name]            
+            [active_office_name]
         );
         const last_regd_no = countRow.last_regd_no;
-        const currentSn = parseInt(last_regd_no.split("-")[1], 10);
-        const nextCount = currentSn + 1;
+        const cleanRegdNo = String( last_regd_no ).trim();
+        const numberPart = parseInt( cleanRegdNo.split( "-" )[1], 10 );
+        const nextRegdNo = `${ numberPart + 1 }`;
 
-        const sanket_no = office_code + '-' + nextCount;
+        console.log( nextRegdNo ); // koshi-2055             
+
+        const sanket_no = office_code + '-' + nextRegdNo;
         console.log( last_regd_no );
         res.json( { Status: true, sanket_no } );
     } catch ( error ) {
