@@ -197,7 +197,7 @@ router.get( "/get_visitors_count1", verifyToken, async ( req, res ) => {
     }
 } );
 
-router.get("/get_visitors_count", verifyToken, async (req, res) => {
+router.get( "/get_visitors_count", verifyToken, async ( req, res ) => {
     const active_office_id = req.user.office_id;
     const user_role = req.user.role_name;
 
@@ -208,8 +208,8 @@ router.get("/get_visitors_count", verifyToken, async (req, res) => {
             [active_office_id]
         );
 
-        if (officeRows.length === 0) {
-            return res.status(404).json({ Status: false, Error: "Office not found" });
+        if ( officeRows.length === 0 ) {
+            return res.status( 404 ).json( { Status: false, Error: "Office not found" } );
         }
 
         let headOfficeId =
@@ -223,15 +223,15 @@ router.get("/get_visitors_count", verifyToken, async (req, res) => {
             [headOfficeId, headOfficeId]
         );
 
-        const officeNames = offices.map(o => o.name);
+        const officeNames = offices.map( o => o.name );
 
         // Step 3: Build the SQL query with multiple offices
         let filters = "WHERE 1=1";
         const params = [];
 
-        if (active_office_id !== 1) {
-            filters += ` AND v.office IN (${officeNames.map(() => "?").join(",")})`;
-            params.push(...officeNames);
+        if ( active_office_id !== 1 ) {
+            filters += ` AND v.office IN (${ officeNames.map( () => "?" ).join( "," ) })`;
+            params.push( ...officeNames );
         }
 
         const sql = `
@@ -243,25 +243,25 @@ router.get("/get_visitors_count", verifyToken, async (req, res) => {
                 COUNT(*) AS total_count
             FROM visitors_visitor v
             JOIN visitors_office o ON v.office = o.name
-            ${filters}
+            ${ filters }
             GROUP BY o.id, o.code 
             ORDER BY o.id, o.code
         `;
 
-        const [rows] = await pool.query(sql, params);
+        const [rows] = await pool.query( sql, params );
 
-        res.json({
+        res.json( {
             Status: true,
             Result: rows,
-        });
-    } catch (err) {
-        console.error("Query Error:", err);
-        res.status(500).json({
+        } );
+    } catch ( err ) {
+        console.error( "Query Error:", err );
+        res.status( 500 ).json( {
             Status: false,
             Error: "Internal Server Error",
-        });
+        } );
     }
-});
+} );
 
 
 
@@ -295,14 +295,17 @@ router.get( "/get_next_sanket_no", verifyToken, async ( req, res ) => {
         newOfficeId = office_id;
 
         const [[countRow]] = await pool.query(
-            `SELECT COUNT(*) AS count 
-             FROM visitors_visitor e 
-             JOIN visitors_office o ON o.name = e.office 
+            `SELECT 
+                COUNT(*) AS count,
+                MAX(regd_no) AS last_regd_no
+            FROM visitors_visitor e
+            JOIN visitors_office o ON o.name = e.office
              WHERE o.name = ?`,
             [active_office_name]
         );
-
-        const nextCount = countRow.count + 1;
+        const last_regd_no = countRow.last_regd_no;
+        const currentSn = parseInt(last_regd_no.split("-")[1], 10);
+        const nextCount = currentSn + 1;
 
         const sanket_no = office_code + '-' + nextCount;
         console.log( sanket_no );
