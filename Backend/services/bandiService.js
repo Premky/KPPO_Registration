@@ -51,10 +51,10 @@ async function insertKaidDetails( bandi_id, data, connection ) {
     releaseAd = data.releaseBs && await bs2ad( data?.release_date_bs );
   }
   let is_life_time;
-  if(data.is_life_time==undefined || data.is_life_time=="" || data.is_life_time==null){
-    is_life_time=0;
-  }else{
-    is_life_time=data.is_life_time
+  if ( data.is_life_time == undefined || data.is_life_time == "" || data.is_life_time == null ) {
+    is_life_time = 0;
+  } else {
+    is_life_time = data.is_life_time;
   }
 
   const baseValues = [
@@ -100,7 +100,7 @@ async function insertCardDetails( bandi_id, data, connection ) {
   const [result] = await connection.query( sql, [values] );
 }
 
-async function insertAddress( bandi_id, data,connection ) {
+async function insertAddress( bandi_id, data, connection ) {
   let sql, values;
   const isNepali = Number( data.nationality_id ) === 1;
 
@@ -140,7 +140,7 @@ async function insertAddress( bandi_id, data,connection ) {
   const [result] = await connection.query( sql, [values] );
 }
 
-async function insertMuddaDetails( bandi_id, muddas = [], user_id, office_id,connection ) {
+async function insertMuddaDetails( bandi_id, muddas = [], user_id, office_id, connection ) {
   const sql = `INSERT INTO bandi_mudda_details (
     bandi_id, mudda_id, mudda_no, is_last_mudda, is_main_mudda,
     mudda_condition, mudda_phesala_antim_office_district,
@@ -152,11 +152,12 @@ async function insertMuddaDetails( bandi_id, muddas = [], user_id, office_id,con
   for ( const m of muddas ) {
     // 🛑 Skip this mudda if mudda_id is missing or empty
     if ( !m.mudda_id ) continue;
-    let is_life_time
-    if(m.is_life_time == null || m.is_life_time == undefined || m.is_life_time==''){
-      is_life_time=0
-    }else{
-      is_life_time=m.is_life_time
+    let is_life_time;
+    if(m.is_life_time===undefined){is_life_time=0}
+    if ( m.is_life_time === null || m.is_life_time === undefined || m.is_life_time === '' ) {
+      is_life_time = 0
+    } else {
+      is_life_time = m.is_life_time
     }
     const values = [
       bandi_id,
@@ -656,7 +657,7 @@ async function insertHealthInsurance( bandi_id, health_insurance = [], user_id, 
   const [result] = await connection.query( sql, [values] );
 }
 
-async function insertTransferDetails( bandi_id, data = [],status_id, user_id, active_office, connection ) {
+async function insertTransferDetails( bandi_id, data = [], status_id, user_id, active_office, connection ) {
   if ( !data.length ) return 0;
 
   const values = data.map( item => [
@@ -691,7 +692,7 @@ async function insertTransferDetails( bandi_id, data = [],status_id, user_id, ac
 
 async function insertTransferRequest( bandi_id, data = [], user_id, active_office, connection ) {
   if ( !data.length ) return 0;
-  console.log(data)
+  console.log( data );
   const values = data.map( item => [
     bandi_id,
     item.transfer_from_office_id,
@@ -721,7 +722,7 @@ async function insertTransferRequest( bandi_id, data = [], user_id, active_offic
   return result.affectedRows || 0; // Always return a number
 }
 
-async function updateTransferDetails(transfer_id, data, user_id, active_office, connection) {
+async function updateTransferDetails( transfer_id, data, user_id, active_office, connection ) {
   const sql = `
     UPDATE bandi_transfer_history
     SET 
@@ -752,7 +753,7 @@ async function updateTransferDetails(transfer_id, data, user_id, active_office, 
     transfer_id,
   ];
 
-  const [result] = await connection.query(sql, values);
+  const [result] = await connection.query( sql, values );
   return result.affectedRows || 0;
 }
 
