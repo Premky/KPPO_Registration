@@ -112,7 +112,7 @@ const VisitorForm = () => {
                                         label="दर्ता नं."
                                         // defaultValue={band_rand_id}
                                         placeholder={"अंग्रेजीमा लेख्नुहोला"}
-                                        readonly={true}
+                                        readonly={false}
                                         required={true}
                                         control={control}
                                         error={errors.regd_no}                                        
