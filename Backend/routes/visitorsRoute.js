@@ -305,8 +305,8 @@ router.get( "/get_next_sanket_no", verifyToken, async ( req, res ) => {
                 LIMIT 1) AS last_regd_no
             FROM visitors_visitor e
             JOIN visitors_office o ON o.name = e.office
-             WHERE o.name = ?`,
-            [active_office_name]
+             WHERE o.name = ? OR o.id = ?`,
+            [active_office_name, active_office]
         );
         const last_regd_no = countRow.last_regd_no;
         const cleanRegdNo = String( last_regd_no ).trim();
