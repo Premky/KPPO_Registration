@@ -94,33 +94,33 @@ router.get( "/get_visitors", verifyToken, async ( req, res ) => {
     }
 } );
 
-router.put("/update_visitor/:id", verifyToken, async (req, res) => {
-  const user_id = req.user.id;
-  const id = req.params.id;
-  const data = req.body;
-    
-  // Use consistent keys according to your DB
-  const values = [
-    data.regd_date,
-    data.time,
-    data.name,
-    data.visitors_office,
-    data.state_id || null,     // Changed province_id to state_id to match SQL
-    data.district_id || null,
-    data.city_id || null,
-    data.tole_ward,
-    data.age,
-    data.gender,
-    data.contact,
-    data.vehicle,
-    data.vehicle_no,
-    data.branch,
-    data.job,
-    data.remarks,
-    user_id,    new Date(),    new Date(),        // entered_time (if you want current time here, consider new Date())
-    id,
-  ];
-  const sql = `
+router.put( "/update_visitor/:id", verifyToken, async ( req, res ) => {
+    const user_id = req.user.id;
+    const id = req.params.id;
+    const data = req.body;
+
+    // Use consistent keys according to your DB
+    const values = [
+        data.regd_date,
+        data.time,
+        data.name,
+        data.visitors_office,
+        data.state_id || null,     // Changed province_id to state_id to match SQL
+        data.district_id || null,
+        data.city_id || null,
+        data.tole_ward,
+        data.age,
+        data.gender,
+        data.contact,
+        data.vehicle,
+        data.vehicle_no,
+        data.branch,
+        data.job,
+        data.remarks,
+        user_id, new Date(), new Date(),        // entered_time (if you want current time here, consider new Date())
+        id,
+    ];
+    const sql = `
     UPDATE visitors_visitor 
     SET 
       regd_date = ?, 
@@ -143,21 +143,21 @@ router.put("/update_visitor/:id", verifyToken, async (req, res) => {
     WHERE id = ?
   `;
 
-  try {
-      const [result] = await pool.query(sql, values);
-      console.log(result)
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "Visitor record not found" });
+    try {
+        const [result] = await pool.query( sql, values );
+        console.log( result );
+        if ( result.affectedRows === 0 ) {
+            return res.status( 404 ).json( { message: "Visitor record not found" } );
+        }
+        res.json( { Status: true, message: "Visitor updated successfully" } );
+    } catch ( error ) {
+        console.error( "Update visitor error:", error );
+        res.status( 500 ).json( { Status: false, message: "Failed to update visitor", error: error.message } );
     }
-    res.json({Status:true, message: "Visitor updated successfully" });
-  } catch (error) {
-    console.error("Update visitor error:", error);
-    res.status(500).json({Status:false,  message: "Failed to update visitor", error: error.message });
-  }
-});
+} );
 
 
-router.get( "/get_visitors_count", verifyToken, async ( req, res ) => {
+router.get( "/get_visitors_count1", verifyToken, async ( req, res ) => {
     const active_office = req.user.office_id;
     const active_office_name = req.user.office_np;
     const user_role = req.user.role_name;
@@ -197,6 +197,71 @@ router.get( "/get_visitors_count", verifyToken, async ( req, res ) => {
     }
 } );
 
+router.get("/get_visitors_count", verifyToken, async (req, res) => {
+    const active_office_id = req.user.office_id;
+    const user_role = req.user.role_name;
+
+    try {
+        // Step 1: Find head office ID (if branch, get its head office)
+        const [officeRows] = await pool.query(
+            "SELECT id, headoffice_id FROM visitors_office WHERE id = ?",
+            [active_office_id]
+        );
+
+        if (officeRows.length === 0) {
+            return res.status(404).json({ Status: false, Error: "Office not found" });
+        }
+
+        let headOfficeId =
+            officeRows[0].headoffice_id && officeRows[0].headoffice_id !== 0
+                ? officeRows[0].headoffice_id
+                : officeRows[0].id;
+
+        // Step 2: Get all offices under that head office (including head)
+        const [offices] = await pool.query(
+            "SELECT name FROM visitors_office WHERE id = ? OR headoffice_id = ?",
+            [headOfficeId, headOfficeId]
+        );
+
+        const officeNames = offices.map(o => o.name);
+
+        // Step 3: Build the SQL query with multiple offices
+        let filters = "WHERE 1=1";
+        const params = [];
+
+        if (active_office_id !== 1) {
+            filters += ` AND v.office IN (${officeNames.map(() => "?").join(",")})`;
+            params.push(...officeNames);
+        }
+
+        const sql = `
+            SELECT 
+                o.name, o.id,
+                SUM(CASE WHEN v.gender = 'पुरुष' THEN 1 ELSE 0 END) AS male_count,
+                SUM(CASE WHEN v.gender = 'महिला' THEN 1 ELSE 0 END) AS female_count,
+                SUM(CASE WHEN v.gender = 'अन्य' THEN 1 ELSE 0 END) AS others_count,
+                COUNT(*) AS total_count
+            FROM visitors_visitor v
+            JOIN visitors_office o ON v.office = o.name
+            ${filters}
+            GROUP BY o.id, o.code 
+            ORDER BY o.id, o.code
+        `;
+
+        const [rows] = await pool.query(sql, params);
+
+        res.json({
+            Status: true,
+            Result: rows,
+        });
+    } catch (err) {
+        console.error("Query Error:", err);
+        res.status(500).json({
+            Status: false,
+            Error: "Internal Server Error",
+        });
+    }
+});
 
 
 
