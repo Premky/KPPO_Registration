@@ -44,9 +44,9 @@ const AllVisitorTable = () => {
     empRecords.map( ( emp ) => ( {
       ...emp,
       id: emp.id,
-      address: emp.address
-        ? `${ emp.address }`
-        : `${ emp.tole_ward }, ${ emp.city_name_np }, ${ emp.district_name_np },${emp.state_name_np}`
+      address: emp?.address
+        ? `${ emp?.address }`
+        : `${ emp?.tole_ward }, ${ emp?.city_name_np }, ${ emp?.district_name_np },${emp?.state_name_np}`
     } ) )
   );
   const handleProvinceChange = ( value ) => {
